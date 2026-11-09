@@ -1,4 +1,4 @@
-"""Interface gráfica do Arca (GTK 4 + libadwaita).
+"""Interface gráfica da Arca (GTK 4 + libadwaita).
 
 A interface roda como usuário comum; leitura e gravação dos cartões são feitas
 pelo processo arca-worker, elevado via pkexec (pede a senha uma vez).
@@ -33,12 +33,18 @@ CSS = """
                background: alpha(@accent_bg_color, 0.16); color: @accent_color; }
 .phase-badge.done { background: alpha(@success_color, 0.18); color: @success_color; }
 .phase-badge.fail { background: alpha(@error_color, 0.18); color: @error_color; }
+.phase-badge.warn { background: alpha(@warning_color, 0.20); color: @warning_color; }
 .map-card { padding: 14px; }
 .legend-dot { min-width: 11px; min-height: 11px; border-radius: 3px; }
 .dot-ok { background: #2ec27e; } .dot-partial { background: alpha(#2ec27e, 0.45); }
 .dot-pending { background: alpha(currentColor, 0.18); } .dot-trim { background: #f6d32d; }
 .dot-scrape { background: #ff7800; } .dot-bad { background: #e01b24; }
 .dot-cur { background: @accent_bg_color; }
+.dot-good { background: #0ca30c; } .dot-fair { background: alpha(#0ca30c, 0.42); }
+.dot-warn { background: #fab219; } .dot-serious { background: #ec835a; }
+.dot-crit { background: #d03b3b; } .dot-violet { background: #6250d6; }
+.dot-read { background: #2a78d6; } .dot-write { background: #eb6834; }
+.dot-read-faded { background: alpha(#2a78d6, 0.30); }
 .banner { padding: 12px 14px; border-radius: 12px; }
 .banner.ok { background: alpha(@success_color, 0.14); }
 .banner.warn { background: alpha(@warning_color, 0.16); }
@@ -1089,15 +1095,19 @@ class Window(Adw.ApplicationWindow):
         p.set_icon_name("arca-card-symbolic")
         p = self.stack.add_titled(self.write, "gravar", "Clonar para cartão novo")
         p.set_icon_name("arca-write-symbolic")
+        from .gui_diag import DiagnosePage
+        self.diag = DiagnosePage(self)
+        p = self.stack.add_titled(self.diag, "diagnostico", "Diagnóstico")
+        p.set_icon_name("arca-diag-symbolic")
 
         hb = Adw.HeaderBar()
         sw = Adw.ViewSwitcherTitle()
         sw.set_stack(self.stack)
         sw.set_title(APP_NAME)
-        sw.set_subtitle("Resgate e clonagem de cartões CompactFlash")
+        sw.set_subtitle("Resgate, clonagem e diagnóstico de cartões CompactFlash")
         hb.set_title_widget(sw)
         menu = Gio.Menu()
-        menu.append("Sobre o Arca", "app.about")
+        menu.append("Sobre a Arca", "app.about")
         mb = Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu)
         hb.pack_end(mb)
         self.spinner = Gtk.Spinner()
@@ -1131,6 +1141,7 @@ class Window(Adw.ApplicationWindow):
         # o worker salva o mapa ao receber o cancelamento; o resgate pode ser retomado
         self.rescue.worker.cancel()
         self.write.worker.cancel()
+        self.diag.worker.cancel()
         return False
 
 
@@ -1161,8 +1172,8 @@ class App(Adw.Application):
         kw = dict(application_name=APP_NAME, application_icon=APP_ID, version=VERSION,
                   developer_name="Marcos Santos", website="https://github.com/aragonxpd154/arca",
                   license_type=Gtk.License.MIT_X11,
-                  comments="Resgate setor a setor de cartões CompactFlash desgastados e clonagem "
-                           "exata para um cartão novo.")
+                  comments="Resgate setor a setor de cartões CompactFlash desgastados, clonagem "
+                           "exata para um cartão novo e diagnóstico de saúde da unidade.")
         if hasattr(Adw, "AboutWindow"):
             Adw.AboutWindow(transient_for=self.props.active_window, **kw).present()
         else:

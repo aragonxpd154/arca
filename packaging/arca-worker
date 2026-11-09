@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Processo privilegiado do Arca (chamado via pkexec pela interface)
+# Processo privilegiado da Arca (chamado via pkexec pela interface)
 import sys
 
 sys.path.insert(0, "/usr/lib/arca")

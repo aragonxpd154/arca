@@ -1,4 +1,4 @@
-"""Processo privilegiado do Arca (roda como root via pkexec).
+"""Processo privilegiado da Arca (roda como root via pkexec).
 
 Fala com a interface por JSON, uma linha por evento, no stdout.
 Para cancelar, a interface escreve "cancel" no stdin (ou fecha o stdin).
@@ -6,6 +6,7 @@ Para cancelar, a interface escreve "cancel" no stdin (ou fecha o stdin).
 Também serve como ferramenta de linha de comando (--texto), por exemplo:
     sudo arca-worker resgatar /dev/sdb ~/cf.img --texto
     sudo arca-worker gravar ~/cf.img /dev/sdc --texto
+    sudo arca-worker diagnosticar /dev/sdc --modo escrita --passadas 10 --confirmo-apagar --texto
 """
 from __future__ import annotations
 
@@ -23,7 +24,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     __package__ = "arca"
 
-from arca import bootinfo, devices, writer  # noqa: E402
+from arca import bootinfo, devices, diagnose, writer  # noqa: E402
 from arca.mapfile import BAD, MapFile  # noqa: E402
 from arca.rescue import DeviceReader, Rescuer, device_size  # noqa: E402
 
@@ -54,6 +55,22 @@ def _print_text(ev):
         sys.stderr.write(f"\n{ev.get('level', 'erro').upper()}: {ev['msg']}\n")
     elif e == "phase":
         sys.stderr.write(f"\n→ {ev['phase_name']}\n")
+    elif e == "dphase":
+        fase = "escrevendo" if ev["phase"] == "write" else "lendo"
+        pad = f" (padrão {ev['pattern']})" if ev.get("pattern") else ""
+        sys.stderr.write(f"\n→ Passada {ev['pass']}: {fase}{pad}\n")
+    elif e == "dprogress":
+        sys.stderr.write(f"\r   bloco {ev['done']}/{ev['nblocks']}  {ev['rate'] / 1e6:6.1f} MB/s   ")
+    elif e == "dpass":
+        r = ev["read"]
+        sys.stderr.write(f"\n   leitura {r['mbps']:.1f} MB/s · p50 {r['lat_p50']:.1f} ms · p99 {r['lat_p99']:.1f} ms"
+                         f" · lentos {r['slow']} · erros {r['errors']}\n")
+    elif e == "dresult":
+        sys.stderr.write(f"\nNOTA {ev['score']}/100 — {ev['verdict']}\n")
+        for f in ev["findings"]:
+            sys.stderr.write(f"  • {f['text']}\n")
+        if ev.get("report"):
+            sys.stderr.write(f"Relatório: {ev['report']}\n")
     elif e in ("finished", "wdone", "report"):
         sys.stderr.write("\n" + json.dumps(ev, ensure_ascii=False, indent=2) + "\n")
 
@@ -269,6 +286,112 @@ def cmd_gravar(a):
     return 0 if res.get("ok") else 4
 
 
+def _home():
+    o = _owner()
+    if o:
+        try:
+            import pwd
+            return pwd.getpwuid(o[0]).pw_dir
+        except KeyError:
+            pass
+    return os.path.expanduser("~")
+
+
+FLAG_TXT = ((diagnose.F_RERR, "erro-leitura"), (diagnose.F_WERR, "erro-escrita"),
+            (diagnose.F_CORRUPT, "corrompido"), (diagnose.F_UNSTABLE, "instavel"),
+            (diagnose.F_ALIAS, "endereco-falso"), (diagnose.F_LOSTW, "escrita-perdida"))
+
+
+def save_history(entry, home):
+    folder = os.path.join(home, ".local", "share", "arca")
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, "diagnosticos.json")
+    try:
+        with open(path) as f:
+            hist = json.load(f)
+    except (OSError, ValueError):
+        hist = []
+    hist.append(entry)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(hist[-2000:], f, ensure_ascii=False, indent=1)
+    os.replace(tmp, path)
+    _chown(os.path.join(home, ".local", "share"), folder, path)
+    return path
+
+
+def cmd_diagnosticar(a):
+    is_blk = _check_block(a.dispositivo, a.permitir_arquivo)
+    disk = devices.get_disk(a.dispositivo) if is_blk else None
+    if disk and disk["system"]:
+        raise SystemExit("Recusado: esse é o disco do sistema.")
+    write = a.modo == "escrita"
+    if write:
+        if not a.confirmo_apagar:
+            raise SystemExit("O modo escrita APAGA o cartão. Repita com --confirmo-apagar.")
+        if disk and disk["readonly"]:
+            raise SystemExit("O cartão está protegido contra escrita.")
+    if disk and disk["mounts"]:
+        if not a.desmontar and write:
+            raise SystemExit("O cartão está montado. Desmonte antes ou use --desmontar.")
+        if a.desmontar:
+            _unmount(disk)
+    total = device_size(a.dispositivo)
+    block = a.bloco * 1024
+    io = diagnose.DeviceIO(a.dispositivo, write, block)
+    cid = devices.card_id(disk, total)
+    info = {"path": a.dispositivo, "model": disk["model"] if disk else "arquivo",
+            "serial": disk["serial"] if disk else "", "size": total, "id": cid,
+            "tran": disk["tran"] if disk else "", "direct": io.direct}
+    emit({"ev": "dinfo", **info})
+    tuning = Tuning(a.dispositivo, a.timeout) if is_blk and os.geteuid() == 0 else None
+    if tuning:
+        tuning.__enter__()
+    try:
+        d = diagnose.Diagnoser(io, total, mode=a.modo, passes=a.passadas, block=block,
+                               emit=emit, cancel=_cancel.is_set, until_fail=a.ate_falhar)
+        res = d.run()
+    finally:
+        io.close()
+        if tuning:
+            tuning.__exit__()
+
+    home = _home()
+    outdir = a.pasta or os.path.join(home, "Arca")
+    os.makedirs(outdir, exist_ok=True)
+    safe = "".join(ch if ch.isalnum() else "-" for ch in info["model"]).strip("-")[:24] or "cartao"
+    base = os.path.join(outdir, f"diagnostico-{safe}-{time.strftime('%Y%m%d-%H%M%S')}")
+    with open(base + ".txt", "w") as f:
+        f.write(diagnose.report_text(info, res))
+    with open(base + ".csv", "w") as f:
+        f.write("bloco,setor_inicial,leitura_ms,leitura_pior_ms,escrita_ms,estado\n")
+        for i in range(d.n):
+            st = "|".join(t for b, t in FLAG_TXT if d.flags[i] & b) or "ok"
+            r, w = d.rlat[i], d.wlat[i]
+            f.write(f"{i},{i * d.block // 512},{'' if r is None else f'{r:.3f}'},"
+                    f"{d.rworst[i]:.3f},{'' if w is None else f'{w:.3f}'},{st}\n")
+    _chown(outdir, base + ".txt", base + ".csv")
+    last = res["summaries"][-1] if res["summaries"] else None
+    entry = {"date": time.strftime("%Y-%m-%dT%H:%M:%S"), "id": cid, "model": info["model"],
+             "serial": info["serial"], "size": total, "mode": a.modo, "block": block,
+             "passes": res["passes_done"], "status": res["status"], "score": res["score"],
+             "verdict": res["verdict"],
+             "read_mbps": last["read"]["mbps"] if last else 0,
+             "write_mbps": last["write"]["mbps"] if last and "write" in last else None,
+             "lat_p50": last["read"]["lat_p50"] if last else 0,
+             "lat_p99": last["read"]["lat_p99"] if last else 0,
+             "slow": last["read"]["slow"] if last else 0,
+             "counts": res["counts"], "written": res["written"]}
+    try:
+        res["history"] = save_history(entry, home)
+    except OSError as e:
+        emit({"ev": "log", "level": "warn", "msg": f"Não consegui salvar o histórico: {e}"})
+    res.update({"report": base + ".txt", "csv": base + ".csv", "id": cid,
+                "blocks": [[d.rlat[i], d.wlat[i], d.flags[i], d.rworst[i]] for i in range(d.n)]})
+    emit(res)
+    return 0 if res["status"] == "done" else 5
+
+
 def main(argv=None):
     global _text
     ap = argparse.ArgumentParser(prog="arca-worker", description="Arca — resgate e clonagem de cartões CF")
@@ -292,6 +415,17 @@ def main(argv=None):
     g.add_argument("--sem-verificar", action="store_true")
     g.add_argument("--desmontar", action="store_true")
     g.add_argument("--permitir-arquivo", action="store_true", help=argparse.SUPPRESS)
+    dg = sub.add_parser("diagnosticar", help="teste de saúde: leitura (seguro) ou leitura e escrita (apaga)")
+    dg.add_argument("dispositivo")
+    dg.add_argument("--modo", choices=("leitura", "escrita"), default="leitura")
+    dg.add_argument("--passadas", type=int, default=1)
+    dg.add_argument("--ate-falhar", action="store_true", help="repete até aparecer o primeiro erro")
+    dg.add_argument("--bloco", type=int, default=1024, help="tamanho do bloco medido, em KiB")
+    dg.add_argument("--timeout", type=int, default=10)
+    dg.add_argument("--pasta", help="onde salvar relatório e CSV (padrão ~/Arca)")
+    dg.add_argument("--confirmo-apagar", action="store_true")
+    dg.add_argument("--desmontar", action="store_true")
+    dg.add_argument("--permitir-arquivo", action="store_true", help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
     _text = a.texto
     if a.cmd == "listar":
@@ -304,7 +438,8 @@ def main(argv=None):
     for s in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
         signal.signal(s, lambda *x: _cancel.set())
     try:
-        return {"resgatar": cmd_resgatar, "gravar": cmd_gravar}[a.cmd](a)
+        return {"resgatar": cmd_resgatar, "gravar": cmd_gravar,
+                "diagnosticar": cmd_diagnosticar}[a.cmd](a)
     except SystemExit as e:
         if isinstance(e.code, str):
             emit({"ev": "error", "msg": e.code})

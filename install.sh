@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Instala o Arca no Zorin OS / Ubuntu / Debian.   Uso:  ./install.sh
+# Instala a Arca no Zorin OS / Ubuntu / Debian.   Uso:  ./install.sh
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -19,6 +19,7 @@ bash packaging/stage.sh /
 
 gtk-update-icon-cache -q -f /usr/share/icons/hicolor 2>/dev/null || true
 update-desktop-database -q /usr/share/applications 2>/dev/null || true
+sh /usr/libexec/arca/atalho-desktop.sh criar || true
 
 echo
-echo "✔ Arca instalado. Procure por \"Arca\" no menu do Zorin ou rode: arca"
+echo "✔ Arca instalado. Ele está no menu do Zorin e na Área de Trabalho (ou rode: arca)."

@@ -90,3 +90,10 @@ def human_bin(n: float) -> str:
             return s.replace(".", ",")
         n /= 1024
     return str(n)
+
+
+def card_id(disk, total: int) -> str:
+    """Identificador estável de uma unidade, para o histórico de diagnósticos."""
+    if disk and disk.get("serial"):
+        return f"{disk['model']}#{disk['serial']}"
+    return f"{(disk or {}).get('model', 'arquivo')}#{total}"

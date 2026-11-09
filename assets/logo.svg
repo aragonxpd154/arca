@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b3a55"/><stop offset="1" stop-color="#16203a"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3d4452"/><stop offset="1" stop-color="#262a33"/>
+    </linearGradient>
+    <linearGradient id="lbl" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4f6fa"/><stop offset="1" stop-color="#cfd5df"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="26" fill="url(#bg)"/>
+  <!-- cartão CF -->
+  <path d="M30 26h56l8 8v62a4 4 0 0 1-4 4H30a4 4 0 0 1-4-4V30a4 4 0 0 1 4-4z" fill="url(#card)"/>
+  <rect x="30" y="29" width="56" height="5" rx="1.5" fill="#15181e"/>
+  <g fill="#7d8796">
+    <circle cx="35" cy="31.5" r="1"/><circle cx="40" cy="31.5" r="1"/><circle cx="45" cy="31.5" r="1"/>
+    <circle cx="50" cy="31.5" r="1"/><circle cx="55" cy="31.5" r="1"/><circle cx="60" cy="31.5" r="1"/>
+    <circle cx="65" cy="31.5" r="1"/><circle cx="70" cy="31.5" r="1"/><circle cx="75" cy="31.5" r="1"/>
+    <circle cx="80" cy="31.5" r="1"/>
+  </g>
+  <rect x="33" y="40" width="54" height="52" rx="4" fill="url(#lbl)"/>
+  <!-- grade de setores -->
+  <g>
+    <rect x="38" y="46" width="7" height="7" rx="1.5" fill="#2ec27e"/>
+    <rect x="47" y="46" width="7" height="7" rx="1.5" fill="#2ec27e"/>
+    <rect x="56" y="46" width="7" height="7" rx="1.5" fill="#2ec27e"/>
+    <rect x="65" y="46" width="7" height="7" rx="1.5" fill="#2ec27e"/>
+    <rect x="74" y="46" width="7" height="7" rx="1.5" fill="#2ec27e"/>
+    <rect x="38" y="55" width="7" height="7" rx="1.5" fill="#2ec27e"/>
+    <rect x="47" y="55" width="7" height="7" rx="1.5" fill="#e01b24"/>
+    <rect x="56" y="55" width="7" height="7" rx="1.5" fill="#2ec27e"/>
+    <rect x="65" y="55" width="7" height="7" rx="1.5" fill="#2ec27e"/>
+    <rect x="74" y="55" width="7" height="7" rx="1.5" fill="#f6d32d"/>
+    <rect x="38" y="64" width="7" height="7" rx="1.5" fill="#2ec27e"/>
+    <rect x="47" y="64" width="7" height="7" rx="1.5" fill="#2ec27e"/>
+    <rect x="56" y="64" width="7" height="7" rx="1.5" fill="#2ec27e"/>
+    <rect x="65" y="64" width="7" height="7" rx="1.5" fill="#c0c7d2"/>
+    <rect x="74" y="64" width="7" height="7" rx="1.5" fill="#c0c7d2"/>
+  </g>
+  <rect x="38" y="76" width="30" height="3" rx="1.5" fill="#9aa3b1"/>
+  <rect x="38" y="82" width="20" height="3" rx="1.5" fill="#b7bec9"/>
+  <!-- selo de cópia -->
+  <circle cx="92" cy="92" r="20" fill="#3584e4" stroke="#16203a" stroke-width="4"/>
+  <path d="M84 85h11v-5l9 8-9 8v-5H84z" fill="#fff"/>
+</svg>

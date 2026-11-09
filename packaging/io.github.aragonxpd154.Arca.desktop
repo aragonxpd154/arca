@@ -2,10 +2,10 @@
 Type=Application
 Name=Arca
 GenericName=Resgate de cartões CompactFlash
-Comment=Recupera setor a setor cartões CF desgastados e clona para um cartão novo
+Comment=Resgata cartões CF desgastados, clona para um cartão novo e diagnostica a saúde da unidade
 Exec=arca
 Icon=io.github.aragonxpd154.Arca
 Terminal=false
 Categories=System;Utility;GTK;
-Keywords=compact;flash;cf;cartão;clonar;imagem;resgate;ddrescue;setor;
+Keywords=compact;flash;cf;cartão;clonar;imagem;resgate;ddrescue;setor;diagnóstico;saúde;teste;
 StartupNotify=true

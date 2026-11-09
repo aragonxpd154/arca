@@ -2,4 +2,4 @@
 
 APP_ID = "io.github.aragonxpd154.Arca"
 APP_NAME = "Arca"
-VERSION = "1.0.0"
+VERSION = "1.1.0"

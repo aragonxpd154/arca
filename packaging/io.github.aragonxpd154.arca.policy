@@ -7,7 +7,7 @@
   <icon_name>io.github.aragonxpd154.Arca</icon_name>
   <action id="io.github.aragonxpd154.arca.worker">
     <description>Ler e gravar cartões de memória</description>
-    <message>O Arca precisa de permissão de administrador para ler e gravar o cartão setor a setor.</message>
+    <message>A Arca precisa de permissão de administrador para ler e gravar o cartão setor a setor.</message>
     <defaults>
       <allow_any>auth_admin</allow_any>
       <allow_inactive>auth_admin</allow_inactive>
