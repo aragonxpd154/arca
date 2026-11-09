@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+build/
+dist/
+*.img
+*.map
+*.map.tmp
+*.relatorio.txt

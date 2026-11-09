@@ -1,0 +1,8 @@
+#!/usr/bin/python3
+# Lançador da interface do Arca
+import sys
+
+sys.path.insert(0, "/usr/lib/arca")
+from arca.gui import main  # noqa: E402
+
+sys.exit(main())

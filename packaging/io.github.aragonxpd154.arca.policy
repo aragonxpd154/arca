@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>Marcos Santos</vendor>
+  <vendor_url>https://github.com/aragonxpd154/arca</vendor_url>
+  <icon_name>io.github.aragonxpd154.Arca</icon_name>
+  <action id="io.github.aragonxpd154.arca.worker">
+    <description>Ler e gravar cartões de memória</description>
+    <message>O Arca precisa de permissão de administrador para ler e gravar o cartão setor a setor.</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/libexec/arca/arca-worker</annotate>
+  </action>
+</policyconfig>

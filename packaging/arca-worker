@@ -1,0 +1,8 @@
+#!/usr/bin/python3
+# Processo privilegiado do Arca (chamado via pkexec pela interface)
+import sys
+
+sys.path.insert(0, "/usr/lib/arca")
+from arca.worker import main  # noqa: E402
+
+sys.exit(main() or 0)
