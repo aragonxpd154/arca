@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.png" alt="Arca — resgate, clonagem e diagnóstico de cartões CompactFlash no Linux" width="100%">
+  <img src="assets/banner.png" alt="Arca    resgate, clonagem e diagnóstico de cartões CompactFlash no Linux" width="100%">
 </p>
 
 <p align="center">
@@ -88,10 +88,10 @@ No fim sai uma **nota de 0 a 100** com a explicação de cada desconto:
 | Nota | Veredito |
 |---|---|
 | 85 – 100 | **Saudável** |
-| 60 – 84 | **Atenção** — funcionando, mas com sinais de desgaste |
-| 30 – 59 | **Degradado** — trocar em breve |
-| 0 – 29 | **Reprovado** — erros de E/S, dados corrompidos ou cartão que parou de responder |
-| 0 | **Falsificado** — capacidade falsa |
+| 60 – 84 | **Atenção**    funcionando, mas com sinais de desgaste |
+| 30 – 59 | **Degradado**    trocar em breve |
+| 0 – 29 | **Reprovado**    erros de E/S, dados corrompidos ou cartão que parou de responder |
+| 0 | **Falsificado**    capacidade falsa |
 
 Cada diagnóstico fica no **histórico da unidade** (identificada pelo número de série), para acompanhar o desgaste do mesmo cartão ao longo dos meses. O teste também gera um relatório `.txt` e um `.csv` com a latência de cada bloco, para analisar em planilha.
 
